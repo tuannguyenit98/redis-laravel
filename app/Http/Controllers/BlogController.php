@@ -28,9 +28,18 @@ class BlogController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create()
+    public function create(Request $request)
     {
-        //
+        $blog = Blog::create($request->all());
+
+        //Redis::set('blog_' . $blog->id, $blog);
+
+        //Redis::setex('blog_' . $blog->id, 60, $blog);
+
+        return response()->json([
+            'status_code' => 201,
+            'message' => 'Create blog success',
+        ]);
     }
 
     /**
@@ -43,7 +52,10 @@ class BlogController extends Controller
     {
         $blog = Blog::create($request->all());
 
-        Redis::set('blog_' . $blog->id, $blog);
+        //Redis::set('blog_' . $blog->id, $blog);
+
+        ////set key and expire
+        Redis::setex('blog_' . $blog->id, 60, $blog);
 
         return response()->json([
             'status_code' => 201,
@@ -66,7 +78,7 @@ class BlogController extends Controller
             $blog = json_decode($cachedBlog, FALSE);
 
             return response()->json([
-                'status_code' => 201,
+                'status_code' => 200,
                 'message' => 'Fetched from redis',
                 'data' => $blog,
             ]);
@@ -74,12 +86,26 @@ class BlogController extends Controller
             $blog = Blog::find($id);
             Redis::set('blog_' . $id, $blog);
 
+            //set key and expire
+            // Redis::setex('blog_' . $id, 60, $blog);
+
             return response()->json([
-                'status_code' => 201,
+                'status_code' => 200,
                 'message' => 'Fetched from database',
                 'data' => $blog,
             ]);
         }
+    }
+
+    public function showExpire($id)
+    {
+        $expireCachedBlog = Redis::ttl('blog_' . $id);
+
+        return response()->json([
+            'status_code' => 200,
+            'message' => 'Expire time',
+            'data' => $expireCachedBlog,
+        ]);
     }
 
     /**
@@ -113,6 +139,9 @@ class BlogController extends Controller
             // Set a new key with the blog id
             Redis::set('blog_' . $id, $blog);
 
+            //set key and expire
+            //Redis::setex('blog_' . $id, 60, $blog);
+
             return response()->json([
                 'status_code' => 201,
                 'message' => 'User updated',
@@ -135,6 +164,23 @@ class BlogController extends Controller
         return response()->json([
             'status_code' => 201,
             'message' => 'Blog deleted'
+        ]);
+    }
+
+    public function checkRedis($id)
+    {
+        $checkRedisKey = Redis::exists('blog_' . $id);
+
+        if (boolval($checkRedisKey) !== true) {
+            return response()->json([
+                'status_code' => 400,
+                'message' => 'Blog not exists'
+            ]);
+        }
+
+        return response()->json([
+            'status_code' => 201,
+            'message' => 'Blog exists'
         ]);
     }
 }

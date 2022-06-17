@@ -36,6 +36,10 @@ Route::get('blogs', [BlogController::class, 'index']);
 
 Route::get('blogs/{id}', [BlogController::class, 'show']);
 
+Route::get('blogs/{id}/expire', [BlogController::class, 'showExpire']);
+
 Route::put('blogs/update/{id}', [BlogController::class, 'update']);
 
 Route::delete('blogs/delete/{id}', [BlogController::class, 'destroy']);
+
+Route::get('blogs/{id}/exists', [BlogController::class, 'checkRedis']);
